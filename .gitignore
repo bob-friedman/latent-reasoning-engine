@@ -1,0 +1,28 @@
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env
+
+# Large Machine Learning Files (Prevents uploading heavy model weights)
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.h5
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
