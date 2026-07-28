@@ -1,6 +1,7 @@
 # latent-reasoning-engine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21633843.svg)](https://doi.org/10.5281/zenodo.21633843)
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/bob-friedman/latent-reasoning-engine/blob/main/latent_gradient_steering.ipynb)
 
 Welcome to the official repository for the **Latent Reasoning Engine**.
