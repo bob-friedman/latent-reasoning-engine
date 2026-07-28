@@ -17,7 +17,7 @@ The theoretical foundation and mathematical proofs of this project are detailed 
 
 To validate the hypothesis that continuous latent gradient ascent can successfully steer generation, interactive Jupyter Notebooks are provided featuring an A/B double-blind experiment using a quantized `Mistral-7B-Instruct-v0.3` model.
 
-The experiment can be run directly in a web browser using the "Open in Colab" badge above, or download the `.ipynb` file to run them locally. 
+The experiment may run directly in a web browser by clicking on the "Open in Colab" badge above, or download the `.ipynb` file to run it locally.
 
 ### Local Installation Requirements
 
