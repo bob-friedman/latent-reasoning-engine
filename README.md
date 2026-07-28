@@ -13,9 +13,9 @@ The theoretical foundation and mathematical proofs of this project are detailed 
 
 * **[SPARSITY_RESOLUTION.md](https://www.google.com/search?q=./SPARSITY_RESOLUTION.md)**: A comprehensive exploration of moving from statistical discrete sparsity mitigation to the Semantic Manifold Hypothesis, feature superposition, and ultimately, Latent Gradient Steering.
 
-## 🚀 Experimental Notebooks (Google Colab)
+## 🚀 Experimental Notebook (Google Colab)
 
-To validate the hypothesis that continuous latent gradient ascent can successfully steer generation, interactive Jupyter Notebooks are provided featuring an A/B double-blind experiment using a quantized `Mistral-7B-Instruct-v0.3` model.
+To validate the hypothesis that continuous latent gradient ascent can successfully steer generation, an interactive Jupyter Notebook is provided featuring an A/B double-blind experiment using a quantized `Mistral-7B-Instruct-v0.3` model.
 
 The experiment may run directly in a web browser by clicking on the "Open in Colab" badge above, or download the `.ipynb` file to run it locally.
 
