@@ -12,7 +12,7 @@ This project explores a novel inference-time compute procedure that unifies gene
 
 The theoretical foundation and mathematical proofs of this project are detailed in the primary research document:
 
-* **[SPARSITY_RESOLUTION.md](https://www.google.com/search?q=./SPARSITY_RESOLUTION.md)**: A comprehensive exploration of moving from statistical discrete sparsity mitigation to the Semantic Manifold Hypothesis, feature superposition, and ultimately, Latent Gradient Steering.
+* **[SPARSITY_RESOLUTION.md](https://github.com/bob-friedman/latent-reasoning-engine/blob/main/SPARSITY_RESOLUTION.md)**: A comprehensive exploration of moving from statistical discrete sparsity mitigation to the Semantic Manifold Hypothesis, feature superposition, and ultimately, Latent Gradient Steering.
 
 ## 🚀 Experimental Notebook (Google Colab)
 
