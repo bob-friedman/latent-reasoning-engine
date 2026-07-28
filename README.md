@@ -37,3 +37,13 @@ This mathematically forces the novel generation to conform to the established ge
 ## 📜 License
 
 This project is licensed under the MIT License.
+
+## 🙏 Acknowledgement
+
+The conceptual development of the methodology and the drafting of the code and brief report benefited significantly from discussions and iterative refinement with an AI language model, Gemini 3.1 Pro (Google). The author oversaw and reviewed the accuracy and robustness of all parts of this study.
+
+## 📝 Citation
+
+If using this code or methodology in your research, please cite this repository. The recommended format is:
+
+*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.1) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
