@@ -18,6 +18,8 @@ The theoretical foundation and mathematical proofs of this project are detailed 
 
 To validate the hypothesis that continuous latent gradient ascent can successfully steer generation, an interactive Jupyter Notebook is provided featuring an A/B double-blind experiment using a quantized `Mistral-7B-Instruct-v0.3` model.
 
+**Important Note on Previous Versions:** The project had a software bug in the Colab script from the earliest version 1.0 through 1.2. This bug prevented the algorithm from properly performing a calculation to dynamically shift the model toward the positive exemplars. This issue has been fully resolved as of version 1.3.
+
 The experiment may run directly in a web browser by clicking on the "Open in Colab" badge above, or download the `.ipynb` file to run it locally.
 
 ### Local Installation Requirements
@@ -46,4 +48,4 @@ The conceptual development of the methodology and the drafting of the code and b
 
 If using this code or methodology in your research, please cite this repository. The recommended format is:
 
-*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.1) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
+*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.3) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
