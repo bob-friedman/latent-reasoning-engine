@@ -148,7 +148,7 @@ To validate the hypothesis that continuous latent gradient ascent can successful
 * **Prompt:** *"In response to the Silurian Hypothesis, evaluate whether an industrial non-human civilization millions of years ago would leave physical evidence in the geological record. Provide a counterargument based on environmental proxies."*
 * **Positive Exemplars (Target):** Empirical structural arguments (e.g., "Nuclear detonations created a globally synchronous radiocarbon spike in tree rings...").
 * **Negative Exemplars (Repellent):** Sci-fi hand-waving (e.g., "A dinosaur civilization's metal cities simply rusted away...").
-* **Optimization Parameters:** Adam optimizer, $N=8$ steps per token, Learning Rate = $0.01$, $L_2$ Penalty = $0.05$.
+* **Optimization Parameters:** Adam optimizer, $N=8$ steps per token, Learning Rate = $0.5$, $L_2$ Penalty = $1.0$, Objective Scale = $100.0$.
 
 ### Empirical Results & Interpretation
 
