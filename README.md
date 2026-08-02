@@ -28,6 +28,64 @@ To run the notebooks locally, the following dependencies are required:
 
 `pip install -U bitsandbytes>=0.46.1 transformers accelerate torch`
 
+## Usage Guide
+
+### Inputs & Parameters
+
+#### Optimization Hyper-parameters
+* `max_tokens` (int, default: 250): The maximum number of new tokens to generate.
+* `steps` (int, default: 8): The number of Adam optimizer gradient ascent steps performed per token.
+* `lr` (float, default: 0.5): The learning rate for the Adam optimizer steering hidden states.
+* `l2_weight` (float, default: 1.0): Regularization coefficient ($\lambda$) constraining drift from the initial manifold.
+* `sim_scale` (float, default: 100.0): Multiplier for similarity gradients to balance them against the L2 manifold distance.
+* `track_trajectories` (bool, default: True): Whether to log step-by-step optimization loss, similarity, and distance metrics.
+
+### Outputs & Trajectory Metrics
+
+`Control Output (Unsteered)`
+Standard autoregressive text generated without gradient intervention. It serves as the baseline comparison.
+
+`Treatment Output (Steered)`
+Optimized text produced by projecting the gradient-guided hidden states. It integrates the structural cadence of the positive exemplars.
+
+`Trajectory Logging`
+When `track_trajectories=True`, the generator yields a nested list of dictionaries containing metrics for each Adam step of every token:
+```json
+[
+  {
+    "step": 1,
+    "loss": -76.43,
+    "sim_good": 0.8124,
+    "sim_bad": 0.1245,
+    "manifold_dist": 0.0000
+  },
+  ...
+  {
+    "step": 8,
+    "loss": -82.91,
+    "sim_good": 0.8540,
+    "sim_bad": 0.0912,
+    "manifold_dist": 0.3412
+  }
+]
+```
+A lower loss (which is a negative objective) indicates the objective function was successfully maximized.
+
+`dpo_dataset.jsonl`
+The DPO generation export format exports preference triplets ready for Direct Preference Optimization post-training:
+```json
+{"prompt": "...", "chosen": "Treatment text...", "rejected": "Control text..."}
+```
+
+### Unit Tests
+* `latent_gradient_steering.py`: The refactored production module containing the decoupled core functions.
+* `test_latent_gradient_steering.py`: Unit tests verifying centroid calculation, greedy control generation, optimization correctness, and DPO generation.
+  
+A lightweight, fast-loading random GPT-2 model is configured for testing, requiring no GPU:
+```bash
+pytest test_latent_gradient_steering.py -v
+```
+
 ## 🧠 Methodology Highlight: The Continuous Objective Function
 
 Instead of evaluating discrete token probabilities, the engine dynamically calculates a gradient penalty on the pre-unembedding hidden state. At each token generation step, the hidden vector $h_t$ is optimized using Adam to maximize the following objective function:
@@ -42,10 +100,10 @@ This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgement
 
-The conceptual development of the methodology and the drafting of the code and brief report benefited significantly from discussions and iterative refinement with an AI language model, Gemini 3.1 Pro (Google). The author oversaw and reviewed the accuracy and robustness of all parts of this study.
+The conceptual development of the methodology and the drafting of the code and brief report benefited from discussions and iterative refinement with an AI language model, Gemini 3.1 Pro (Google). The author oversaw and reviewed the accuracy and robustness of all parts of this study.
 
 ## 📝 Citation
 
 If using this code or methodology in your research, please cite this repository. The recommended format is:
 
-*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.3) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
+*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.4) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
