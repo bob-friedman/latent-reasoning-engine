@@ -28,7 +28,7 @@ To run the notebooks locally, the following dependencies are required:
 
 `pip install -U bitsandbytes>=0.46.1 transformers accelerate torch`
 
-## Usage Guide
+## ⚙️ Usage Guide
 
 ### Inputs & Parameters
 
