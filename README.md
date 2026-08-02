@@ -54,22 +54,22 @@ When `track_trajectories=True`, the generator yields a nested list of dictionari
 [
   {
     "step": 1,
-    "loss": -76.43,
-    "sim_good": 0.8124,
-    "sim_bad": 0.1245,
+    "loss": -11.5020,
+    "sim_good": 0.1768,
+    "sim_bad": 0.1235,
     "manifold_dist": 0.0000
   },
   ...
   {
     "step": 8,
-    "loss": -82.91,
-    "sim_good": 0.8540,
-    "sim_bad": 0.0912,
-    "manifold_dist": 0.3412
+    "loss": -2.4988,
+    "sim_good": 0.1906,
+    "sim_bad": 0.1276,
+    "manifold_dist": 10.1849
   }
 ]
 ```
-A lower loss (which is a negative objective) indicates the objective function was successfully maximized.
+Note: Because manifold_dist starts at zero, the total loss may initially increase as the vector begins to move. A successful trajectory is indicated by sim_good rising as the optimizer finds a stable balance against the L2 distance penalty.
 
 `dpo_dataset.jsonl`
 The DPO generation export format exports preference triplets ready for Direct Preference Optimization post-training:
