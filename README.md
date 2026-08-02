@@ -71,11 +71,13 @@ When `track_trajectories=True`, the generator yields a nested list of dictionari
 ```
 Note: Because manifold_dist starts at zero, the total loss may initially increase as the vector begins to move. A successful trajectory is indicated by sim_good rising as the optimizer finds a stable balance against the L2 distance penalty.
 
-`dpo_dataset.jsonl`
-The DPO generation export format exports preference triplets ready for Direct Preference Optimization post-training:
+`DPO Generation`
+Direct Preference Optimization data is stored a file named `dpo_dataset.jsonl` and formatted as sets of preference triplets. It is generated for use in the subsequent post-training of a large language model:
 ```json
 {"prompt": "...", "chosen": "Treatment text...", "rejected": "Control text..."}
 ```
+
+The guide for batch processing the generation of the DPO data: [BATCH_AUTOMATION.md](https://github.com/bob-friedman/latent-reasoning-engine/blob/main/batch_process/BATCH_AUTOMATION.md).
 
 ### Unit Tests
 * `latent_gradient_steering.py`: The refactored production module containing the decoupled core functions.
