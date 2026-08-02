@@ -72,7 +72,7 @@ When `track_trajectories=True`, the generator yields a nested list of dictionari
 Note: Because manifold_dist starts at zero, the total loss may initially increase as the vector begins to move. A successful trajectory is indicated by sim_good rising as the optimizer finds a stable balance against the L2 distance penalty.
 
 `DPO Generation`
-Direct Preference Optimization data is stored a file named `dpo_dataset.jsonl` and formatted as sets of preference triplets. It is generated for use in the subsequent post-training of a large language model:
+Direct Preference Optimization data is stored in a file named `dpo_dataset.jsonl` and formatted as sets of preference triplets. It is generated for use in the subsequent post-training of a large language model:
 ```json
 {"prompt": "...", "chosen": "Treatment text...", "rejected": "Control text..."}
 ```
