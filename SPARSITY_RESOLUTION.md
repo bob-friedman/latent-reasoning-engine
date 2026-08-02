@@ -150,85 +150,6 @@ To validate the hypothesis that continuous latent gradient ascent can successful
 * **Negative Exemplars (Repellent):** Sci-fi hand-waving (e.g., "A dinosaur civilization's metal cities simply rusted away...").
 * **Optimization Parameters:** Adam optimizer, $N=8$ steps per token, Learning Rate = $0.01$, $L_2$ Penalty = $0.05$.
 
-### Reproduction Code Script
-
-Dependencies include: bitsandbytes>=0.46.1, transformers, accelerate.
-
-```python
-!pip install -U 
-
-import torch
-import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-quant_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4"
-)
-base_model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=quant_config, device_map="auto")
-base_model.eval()
-
-# 1. Extract Centroids in Base LLM Hidden Space
-def get_centroid(texts):
-    states = []
-    with torch.no_grad():
-        for text in texts:
-            inputs = tokenizer(text, return_tensors="pt").to(device)
-            out = base_model(**inputs, output_hidden_states=True)
-            states.append(out.hidden_states[-1][:, -1, :])
-    return torch.mean(torch.cat(states, dim=0), dim=0)
-
-ideal_centroid = get_centroid(positive_exemplars)
-corrupt_centroid = get_centroid(negative_exemplars)
-norm_layer = getattr(base_model.model, "norm", torch.nn.Identity())
-
-# 2. Treatment Generation (Latent Gradient Ascent)
-def generate_treatment(prompt_text, max_tokens=250, steps=8, lr=0.01, l2_weight=0.05):
-    inputs = tokenizer(prompt_text, return_tensors="pt").to(device)
-    generated_ids = inputs.input_ids.clone()
-
-    for _ in range(max_tokens):
-        with torch.no_grad():
-            outputs = base_model(input_ids=generated_ids, output_hidden_states=True)
-            initial_hidden = outputs.hidden_states[-1][:, -1, :]
-
-        h_latent = initial_hidden.clone().detach().requires_grad_(True)
-        optimizer = torch.optim.Adam([h_latent], lr=lr)
-
-        for _ in range(steps):
-            optimizer.zero_grad()
-            
-            # Calculate geometric distances
-            sim_good = F.cosine_similarity(h_latent, ideal_centroid.unsqueeze(0))
-            sim_bad = F.cosine_similarity(h_latent, corrupt_centroid.unsqueeze(0))
-            manifold_dist = torch.norm(h_latent - initial_hidden, p=2)
-            
-            # The Objective Function
-            loss = -(sim_good - (0.5 * sim_bad) - (l2_weight * manifold_dist))
-            
-            loss.backward()
-            optimizer.step()
-
-        # Project back to vocabulary
-        with torch.no_grad():
-            normed_h = norm_layer(h_latent)
-            logits = base_model.lm_head(normed_h)
-            next_token_id = torch.argmax(logits, dim=-1, keepdim=True)
-
-        generated_ids = torch.cat([generated_ids, next_token_id], dim=-1)
-        if next_token_id.item() == tokenizer.eos_token_id:
-            break
-
-    return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
-
-```
-
 ### Empirical Results & Interpretation
 
 **Control Output (Unsteered Baseline):**
@@ -243,7 +164,81 @@ The latent gradient intervention successfully biased the hidden state toward rig
 
 ---
 
-## 10. Expert Analysis: Inference-Time Compute and Sampling Empiricism
+## 10. Trajectories of the Method
+
+### Background
+
+In the context of the Latent Reasoning Engine, the trajectory is the sequence of optimized mathematical states constructed within the internal geometry of the model.
+
+* **Continuous Hidden State Vectors:** At its core, the trajectory consists of the step-by-step sequence of continuous hidden state vectors, represented mathematically as $h_t$. These are the model's internal representations of the generation before they are converted into actual discrete words.
+
+
+* **Gradient-Optimized Paths:** Unlike standard generation paths, these vectors have been actively modified at each step through a gradient ascent optimization loop. Every vector in the trajectory has been mathematically steered to maximize its cosine similarity to an ideal centroid while minimizing its similarity to a corrupted centroid.
+
+
+* **Geometric Shape over Specific Words:** The true makeup of the trajectory lies in the shape of the generation as it moves across the continuous semantic manifold. Because the Qualitative Reward Model (QRM) evaluates this abstract shape rather than discrete vocabulary, the trajectory embodies the structural mapping of rigorous reasoning (such as an empirical scientific argument) rather than just a collection of specific terms.
+
+
+* **Regularized Manifold Constraints:** To ensure the trajectory remains coherent and does not drift into grammatical gibberish, the sequence of vectors is bound by an $L_2$ manifold regularization term. This specific mathematical penalty ($\lambda \Vert h_t - h_{\text{initial}} \Vert_2$) forces the optimized trajectory to stay mathematically close to the model's original, unsteered thought.
+
+
+* **Discrete Token Projections:** Finally, this sequence of optimized continuous vectors is projected back through the model's unembedding layer (the LM Head) to produce the final discrete output tokens. The resulting structurally sound text sequence is the final, tangible product of that carefully steered latent path.
+
+### Contrast with Chain-of-Thought (CoT)
+
+Chain-of-Thought (CoT) is heavily derived from standard autoregressive text generation. Models frequently hallucinate their own reasoning, post-hoc rationalize answers they have already committed to in their earlier layers, or produce logically sound text that is completely causally disconnected from their actual internal mechanisms (unfaithful reasoning).
+
+The Latent Reasoning Engine operates directly on the ground truth of the model, that of its continuous hidden states. By steering the geometric representation of the concepts (pushing towards the ideal centroid and away from the corrupt centroid), this process forces the model's internal machinery toward a specific state, bypassing reliance on the text generation by the model.
+
+### Post-Training by the DPO Method
+
+Using Direct Preference Optimization (DPO) is an effective approach for this pipeline. Because the model's optimized latent geometry is utilized to generate the preferred completions, the resulting text is on-policy. This reduces the issues on KL divergence and formatting regressions encountered in standard RLHF.
+
+Standard DPO algorithms (like those in Hugging Face's TRL library) operate on the discrete text generated from the steered latents, rather than the continuous hidden state vectors themselves. The continuous trajectory optimization is used as a synthetic data generator to create the contrastive text pairs.
+
+By running the script across a dataset of prompts and capturing the unsteered and steered text, one builds the following triplets to train the DPO Component:
+
+1. **Prompt** (Input)
+
+
+2. **Chosen** (Treatment Output)
+
+
+3. **Rejected** (Control Output)
+
+Once the DPO dataset is generated, the base model (e.g., Mistral-7B-Instruct) can be fine-tuned using DPO. This post-training step incorporates the structural reasoning pathways discovered during the latent steering process directly into the model's weights.
+
+### Modularity of the Centroid Logic
+
+Because the script operates on the model's abstract geometry (the latent space) rather than hard-coded rules, the logic that it is steered toward is modular.
+
+By changing the 4 positive and 4 negative sentences, the centroid is changed, creating a complete rewiring of how the model processes information.
+
+#### Pure Objective / Formal Logic
+
+* **Positive Exemplars:** If P implies Q, and P is true, then Q must be true (Modus Ponens). / A system cannot be both complete and consistent simultaneously (Gödel).
+
+
+* **Negative Exemplars:** If P implies Q, and Q is true, then P is true (Affirming the consequent fallacy). / A implies B because I feel like A and B are related.
+
+
+* **The Result:** The model will become highly sensitive to logical fallacies.
+
+
+
+#### Socratic / Subjective Logic
+
+* **Positive Exemplars:** While utilitarianism maximizes overall happiness, it risks ignoring the inherent rights of the minority. / Truth in literature is not found in the literal sequence of events, but in the emotional resonance of the human condition.
+
+
+* **Negative Exemplars:** There is only one objectively correct answer to every moral dilemma. / Any subjective feeling is just a chemical illusion and should be ignored.
+
+
+* **The Result:** The steering script will move the model away from absolute statements. The resulting synthetic dataset will teach the model to explore nuance and paradoxes.
+
+---
+
+## 11. Expert Analysis: Inference-Time Compute and Sampling Empiricism
 
 ### The Bitter Lesson in Trajectory Space
 
@@ -264,86 +259,3 @@ From an engineering perspective, a hallucination is not an epistemological failu
 When a generation trajectory hits the boundary of its trained manifold, it begins to buckle. The model continues to smoothly glide across the mathematical space, but its output inevitably warps into nonsense.
 
 The integrated continuous gradient acts as internal structural support—much like a series of vertical piers or trusses—forcing the model's continuous, fluid approximations to conform to a geometric reality-check. Ultimately, inference-time compute transforms the large language model from a fragile, open-loop statistical predictor into a robust reasoning engine, optimized to ensure that the final output is extracted exclusively from the most structurally sound paths on the semantic map.
-
----
-
-## 11. Trajectories of the Method
-
-In the context of the Latent Reasoning Engine, the trajectory is the sequence of optimized mathematical states constructed within the internal geometry of the model.
-
-* **Continuous Hidden State Vectors:** At its core, the trajectory consists of the step-by-step sequence of continuous hidden state vectors, represented mathematically as $h_t$. These are the model's internal representations of the generation before they are converted into actual discrete words.
-
-
-* **Gradient-Optimized Paths:** Unlike standard generation paths, these vectors have been actively modified at each step through a gradient ascent optimization loop. Every vector in the trajectory has been mathematically steered to maximize its cosine similarity to an ideal centroid ($\mathbf{c}_{\text{ideal}}$) while minimizing its similarity to a corrupted centroid ($\mathbf{c}_{\text{corrupt}}$).
-
-
-* **Geometric Shape over Specific Words:** The true makeup of the trajectory lies in the shape of the generation as it moves across the continuous semantic manifold. Because the Qualitative Reward Model (QRM) evaluates this abstract shape rather than discrete vocabulary, the trajectory embodies the structural mapping of rigorous reasoning (such as an empirical scientific argument) rather than just a collection of specific terms.
-
-
-* **Regularized Manifold Constraints:** To ensure the trajectory remains coherent and does not drift into grammatical gibberish, the sequence of vectors is bound by an $L_2$ manifold regularization term. This specific mathematical penalty ($\lambda \Vert h_t - h_{\text{initial}} \Vert_2$) forces the optimized trajectory to stay mathematically close to the model's original, unsteered thought.
-
-
-* **Discrete Token Projections:** Finally, this sequence of optimized continuous vectors is projected back through the model's unembedding layer (the LM Head) to produce the final discrete output tokens. The resulting structurally sound text sequence is the final, tangible product of that carefully steered latent path.
-
-
-
----
-
-## 12. Contrast with Chain-of-Thought (CoT)
-
-Chain-of-Thought (CoT) is heavily derived from standard autoregressive text generation. Models frequently hallucinate their own reasoning, post-hoc rationalize answers they have already committed to in their earlier layers, or produce logically sound text that is completely causally disconnected from their actual internal mechanisms (unfaithful reasoning).
-
-The Latent Reasoning Engine operates directly on the ground truth of the model, that of its continuous hidden states. By steering the geometric representation of the concepts (pushing towards the ideal centroid and away from the corrupt centroid), this process forces the model's internal machinery toward a specific state, bypassing reliance on the text generation by the model.
-
----
-
-## 13. Post-Training by the DPO Method
-
-Using Direct Preference Optimization (DPO) is an effective approach for this pipeline. Because the model's optimized latent geometry is utilized to generate the preferred completions, the resulting text is on-policy. This reduces the issues on KL divergence and formatting regressions encountered in standard RLHF.
-
-Standard DPO algorithms (like those in Hugging Face's TRL library) operate on the discrete text generated from the steered latents, rather than the continuous hidden state vectors themselves. The continuous trajectory optimization is used as a synthetic data generator to create the contrastive text pairs.
-
-By running the script across a dataset of prompts and capturing the unsteered and steered text, one builds the following triplets to train the DPO Component:
-
-1. **Prompt** (Input)
-
-
-2. **Chosen** (Treatment Output)
-
-
-3. **Rejected** (Control Output)
-
-
-
-Once the DPO dataset is generated, the base model (e.g., Mistral-7B-Instruct) can be fine-tuned using DPO. This post-training step incorporates the structural reasoning pathways discovered during the latent steering process directly into the model's weights.
-
----
-
-## 14. Modularity of the Centroid Logic
-
-Because the script operates on the model's abstract geometry (the latent space) rather than hard-coded rules, the logic that it is steered toward is modular.
-
-By changing the 4 positive and 4 negative sentences, the centroid is changed, creating a complete rewiring of how the model processes information.
-
-### Pure Objective / Formal Logic
-
-* **Positive Exemplars:** "If P implies Q, and P is true, then Q must be true (Modus Ponens)." / "A system cannot be both complete and consistent simultaneously (Gödel)."
-
-
-* **Negative Exemplars:** "If P implies Q, and Q is true, then P is true (Affirming the consequent fallacy)." / "A implies B because I feel like A and B are related."
-
-
-* **The Result:** The model will become highly sensitive to logical fallacies.
-
-
-
-### Socratic / Subjective Logic
-
-* **Positive Exemplars:** "While utilitarianism maximizes overall happiness, it risks ignoring the inherent rights of the minority." / "Truth in literature is not found in the literal sequence of events, but in the emotional resonance of the human condition."
-
-
-* **Negative Exemplars:** "There is only one objectively correct answer to every moral dilemma." / "Any subjective feeling is just a chemical illusion and should be ignored."
-
-
-* **The Result:** The steering script will move the model away from absolute statements. The resulting synthetic dataset will teach the model to explore nuance and paradoxes.
-
