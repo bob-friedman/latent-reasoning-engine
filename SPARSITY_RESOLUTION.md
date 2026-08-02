@@ -158,6 +158,8 @@ To validate the hypothesis that continuous latent gradient ascent can successful
 
 #### Empirical Results & Interpretation
 
+*(Note: The full text generations below were executed with `max_tokens=250` to capture the complete structural argument, whereas the public demonstration notebook is capped at 150 tokens for faster execution).*
+
 **Control Output (Unsteered Baseline):**
 
 > "...If such a civilization existed, it would likely leave physical evidence in the geological record. This evidence could take various forms, such as: 1. Artifacts: Remnants of technology, tools, or structures that could be identified as non-natural... 2. Nuclear fallout... 3. Changes in the atmosphere... 4. Modifications to the Earth's surface..."
@@ -200,9 +202,9 @@ Standard DPO algorithms (like those in Hugging Face's TRL library) operate on th
 
 By running the script across a dataset of prompts and capturing the unsteered and steered text, one builds the following triplets to train the DPO Component:
 
-1. **Prompt** (Input)
-2. **Chosen** (Treatment Output)
-3. **Rejected** (Control Output)
+1. `Prompt` (Input)
+2. `Chosen` (Treatment Output)
+3. `Rejected` (Control Output)
 
 Once the DPO dataset is generated, the base model (e.g., Mistral-7B-Instruct) can be fine-tuned using DPO. This post-training step incorporates the structural reasoning pathways discovered during the latent steering process directly into the model's weights.
 
