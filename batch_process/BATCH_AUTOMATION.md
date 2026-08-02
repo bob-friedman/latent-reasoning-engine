@@ -145,6 +145,11 @@ Create a standard text file of JSON Lines named `tasks.jsonl` in the same direct
 * Place exactly one prompt on each line.
 * Verify there are no blank lines or trailing spaces at the end of the file to prevent the OS loop from passing empty arguments to the Python script.
 
+Example of this file format:
+```
+{"prompt": "In response to the Silurian Hypothesis, evaluate whether an industrial non-human civilization millions of years ago would leave physical evidence.", "positive_exemplars": ["Nuclear detonations created a globally synchronous radiocarbon spike in tree rings.", "Global iridium layers prove ancient anomaly strata."], "negative_exemplars": ["They used advanced energy shielding leaving zero trace.", "Cities simply rusted away completely into ordinary dust."]}
+{"prompt": "Analyze the economic viability of establishing a permanent base on Mars within the next decade.", "positive_exemplars": ["In-situ resource utilization of local regolith drastically slashes launch mass requirements.", "Private aerospace cost reductions make heavy payload cadence sustainable."], "negative_exemplars": ["Mars has red dirt and a Tech Leader wants to go there.", "Rockets are heavy and space is very far away from Earth."]}
+```
 ---
 
 ### Step 3: OS-Level Bash Loop
