@@ -43,7 +43,8 @@ base_model = AutoModelForCausalLM.from_pretrained(
 base_model.eval()
 device = base_model.device
 norm_layer = getattr(base_model.model, "norm", torch.nn.Identity())
-print("Model loaded successfully.")
+
+print("Model loaded successfully.", file=sys.stderr)
 
 # 2. Dynamic Centroid Extraction Function
 def get_centroid(texts):
@@ -62,13 +63,21 @@ def get_centroid(texts):
 
 # 3. Control Generation (Baseline)
 def generate_control(prompt_text, max_tokens=250):
-    inputs = tokenizer(prompt_text, return_tensors="pt").to(device)
+    chat_prompt = f"<s>[INST] {prompt_text} [/INST]"
+    inputs = tokenizer(chat_prompt, return_tensors="pt").to(device)
+    input_length = inputs.input_ids.shape[1]
+    
     outputs = base_model.generate(**inputs, max_new_tokens=max_tokens, do_sample=False)
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    generated_tokens = outputs[0][input_length:]
+    return tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
 # 4. Treatment Generation (Latent Gradient Ascent)
 def generate_treatment(prompt_text, ideal_centroid, corrupt_centroid, max_tokens=250, steps=8, lr=0.5, l2_weight=1.0, sim_scale=100.0):
-    inputs = tokenizer(prompt_text, return_tensors="pt").to(device)
+    chat_prompt = f"<s>[INST] {prompt_text} [/INST]"
+    inputs = tokenizer(chat_prompt, return_tensors="pt").to(device)
+    input_length = inputs.input_ids.shape[1]
+    
     generated_ids = inputs.input_ids.clone()
 
     ideal_c = ideal_centroid.clone().to(torch.float32)
@@ -107,33 +116,41 @@ def generate_treatment(prompt_text, ideal_centroid, corrupt_centroid, max_tokens
         if next_token_id.item() == tokenizer.eos_token_id:
             break
 
-    return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+    generated_tokens = generated_ids[0][input_length:]
+    return tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
 if __name__ == "__main__":
-    # Ingest a single JSON task line passed dynamically by the OS loop
-    task_json = sys.argv[1]
-    task_data = json.loads(task_json)
-    
-    prompt_text = task_data["prompt"]
-    positive_exemplars = task_data["positive_exemplars"]
-    negative_exemplars = task_data["negative_exemplars"]
+    # Continuously read incoming JSON lines from pipe in Bash shell
+    for line in sys.stdin:
+        task_json = line.strip()
+        if not task_json:
+            continue
+            
+        task_data = json.loads(task_json)
+        
+        prompt_text = task_data["prompt"]
+        positive_exemplars = task_data["positive_exemplars"]
+        negative_exemplars = task_data["negative_exemplars"]
 
-    # Compute task-specific centroids on the fly
-    ideal_centroid = get_centroid(positive_exemplars)
-    corrupt_centroid = get_centroid(negative_exemplars)
+        # Compute task-specific centroids on the fly
+        ideal_centroid = get_centroid(positive_exemplars)
+        corrupt_centroid = get_centroid(negative_exemplars)
 
-    # Generate the contrastive pair
-    rejected_text = generate_control(prompt_text)
-    chosen_text = generate_treatment(prompt_text, ideal_centroid, corrupt_centroid)
-    
-    # Construct the DPO dictionary map and print to standard output
-    dpo_pair = {
-        "prompt": prompt_text,
-        "chosen": chosen_text,
-        "rejected": rejected_text
-    }
-    
-    print(json.dumps(dpo_pair))
+        # Generate the contrastive pair
+        rejected_text = generate_control(prompt_text)
+        chosen_text = generate_treatment(prompt_text, ideal_centroid, corrupt_centroid)
+        
+        # Construct the DPO dictionary map and print to standard output
+        dpo_pair = {
+            "prompt": prompt_text,
+            "chosen": chosen_text,
+            "rejected": rejected_text
+        }
+        
+        print(json.dumps(dpo_pair))
+        
+        # Flush buffer for immediate data writes to file
+        sys.stdout.flush()
 ```
 
 ---
@@ -166,12 +183,15 @@ echo "Initiating sequential DPO dataset generation..."
 
 # Iterate through the text file line-by-line
 while IFS= read -r prompt; do
-    echo "Processing prompt: $prompt"
     
-    # Execute the Python script and append the JSON output to the dataset
-    python steer.py "$prompt" >> dpo_dataset.jsonl
+    # Route terminal logs to stderr so they don't go into the Python pipe
+    echo "Sending prompt to Python..." >&2
+    
+    # Echo the raw JSON string to stdout (which feeds the pipe)
+    echo "$prompt"
 
-done < prompts.txt
+# Pipe entire loop's output into a Python instance and then append to file
+done < tasks.jsonl | python steer.py >> dpo_dataset.jsonl
 
 echo "Dataset generation complete. Output saved to dpo_dataset.jsonl."
 
