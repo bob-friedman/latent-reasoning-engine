@@ -108,4 +108,4 @@ The conceptual development of the methodology and the drafting of the code and b
 
 If using this code or methodology in your research, please cite this repository. The recommended format is:
 
-*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.4) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21635950
+*   Friedman, R. (2026) *Latent Reasoning Engine* (Version v1.6) [Method and software]. Zenodo. https://doi.org/10.5281/zenodo.21633843
